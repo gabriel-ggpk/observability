@@ -1,0 +1,31 @@
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+receivers:
+  otlp:
+    protocols:
+      http: { endpoint: 0.0.0.0:4318 }
+processors:
+  memory_limiter:
+    { check_interval: 1s, limit_percentage: 80, spike_limit_percentage: 20 }
+  batch: {}
+exporters:
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp # nome do Service Connect; o exporter acrescenta /v1/logs
+    sending_queue: { enabled: true } # segura os logs em memória se o Loki ficar fora do ar
+    retry_on_failure: { enabled: true }
+  otlphttp/tempo:
+    endpoint: http://tempo-otlp:4318 # porta extra do Tempo no Service Connect; o exporter acrescenta /v1/traces
+    sending_queue: { enabled: true }
+    retry_on_failure: { enabled: true }
+service:
+  extensions: [health_check]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/loki]
+    traces: # mesmo receiver e mesmos processors; só o destino muda por sinal
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/tempo]

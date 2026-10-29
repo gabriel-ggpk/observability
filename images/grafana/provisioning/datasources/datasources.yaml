@@ -1,0 +1,43 @@
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    uid: loki # fixo: os dashboards referenciam o uid, não o nome
+    type: loki
+    access: proxy # o servidor do Grafana faz a consulta, não o navegador
+    url: http://loki:3100 # nome do Service Connect
+    isDefault: true
+    editable: false # mudanças vêm do repo, não da UI
+    jsonData:
+      maxLines: 1000
+      # Log -> trace: o trace_id está em structured metadata (matcherType label),
+      # e vira um link para o datasource Tempo. $$ escapa o $ da interpolação
+      # de env vars que o Grafana faz nos arquivos de provisioning.
+      derivedFields:
+        - name: TraceID
+          matcherType: label
+          matcherRegex: trace_id
+          datasourceUid: tempo
+          url: "$${__value.raw}"
+          urlDisplayLabel: Ver trace
+
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200 # porta de consulta do Tempo no Service Connect
+    editable: false
+    jsonData:
+      # Trace -> logs: de um span, abre no Loki os logs com o mesmo trace_id
+      tracesToLogsV2:
+        datasourceUid: loki
+        filterByTraceID: true
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
+        tags:
+          - key: service.name # atributo no trace
+            value: service_name # label equivalente no Loki
+      lokiSearch:
+        datasourceUid: loki
+      nodeGraph:
+        enabled: true

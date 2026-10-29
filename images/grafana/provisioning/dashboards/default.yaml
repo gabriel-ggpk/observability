@@ -1,0 +1,10 @@
+apiVersion: 1
+
+providers:
+  - name: observability
+    folder: Observability
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false # editar na UI não persiste: a fonte é o JSON no repo
+    options:
+      path: /var/lib/grafana/dashboards

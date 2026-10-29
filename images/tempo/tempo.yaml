@@ -1,0 +1,43 @@
+# Tempo 3.x monolítico (1 réplica) com blocos no S3.
+# Baseado em example/docker-compose/single-binary/tempo.yaml da tag v3.1.1.
+# No modo monolítico o 3.x não usa Kafka: live-store, block-builder e
+# backend-scheduler/worker rodam no mesmo processo.
+# ${VAR} é expandido a partir das env vars da task (-config.expand-env=true).
+
+stream_over_http_enabled: true # o Grafana usa streaming nas buscas
+
+server:
+  http_listen_port: 3200 # API de consulta (Grafana) e /ready
+  log_level: info
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:4318 # recebe traces do collector
+
+storage:
+  trace:
+    backend: s3
+    s3:
+      bucket: ${TEMPO_S3_BUCKET}
+      endpoint: s3.${AWS_REGION}.amazonaws.com
+      region: ${AWS_REGION} # sem access_key: credenciais vêm da task role
+    wal:
+      path: /var/tempo/wal # disco efêmero da task
+
+# Retenção: no 3.x quem apaga blocos antigos é o backend-scheduler/worker
+# (substituíram o compactor do 2.x)
+backend_scheduler:
+  provider:
+    compaction:
+      compaction:
+        block_retention: 168h # 7 dias
+
+backend_worker:
+  compaction:
+    block_retention: 168h
+
+usage_report:
+  reporting_enabled: false # não enviar estatísticas de uso para a Grafana Labs

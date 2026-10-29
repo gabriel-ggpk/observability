@@ -1,0 +1,44 @@
+# Loki monolítico (1 réplica) com chunks e índice no S3.
+# ${VAR} é expandido a partir das env vars da task (-config.expand-env=true).
+
+auth_enabled: false # single-tenant; multi-tenant (X-Scope-OrgID) fica para depois
+
+server:
+  http_listen_port: 3100
+  log_level: info
+
+common:
+  # No Fargate a interface de rede não se chama eth0/en0, e o Loki falha ao
+  # descobrir o próprio IP para o ring. Com 1 réplica, loopback basta.
+  instance_addr: 127.0.0.1
+  path_prefix: /loki # WAL, cache do índice e compactor (disco efêmero da task)
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory # sem memberlist: só funciona com 1 réplica
+  storage:
+    s3:
+      region: ${AWS_REGION}
+      bucketnames: ${LOKI_S3_BUCKET} # credenciais vêm da task role, sem access key
+
+schema_config:
+  configs:
+    - from: 2026-10-01 # nunca altere um período já escrito; mudanças entram como novo item
+      store: tsdb
+      object_store: s3
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  retention_period: 744h # 31 dias
+  allow_structured_metadata: true # necessário para ingestão OTLP
+
+compactor:
+  working_directory: /loki/compactor
+  retention_enabled: true # sem isso, retention_period não apaga nada
+  delete_request_store: s3
+
+analytics:
+  reporting_enabled: false # não enviar estatísticas de uso para a Grafana Labs
