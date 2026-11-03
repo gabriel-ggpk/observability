@@ -10,6 +10,17 @@ processors:
     { check_interval: 1s, limit_percentage: 80, spike_limit_percentage: 20 }
   batch: {}
 
+connectors:
+  spanmetrics:
+    histogram:
+      unit: s
+      explicit:
+        buckets:
+          [5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2500ms, 5s, 10s]
+    exemplars:
+      enabled: true # trace_id nos pontos de latência -> link para o Tempo
+    metrics_flush_interval: 15s
+
 exporters:
   otlphttp/loki:
     endpoint: http://loki:3100/otlp # nome do Service Connect; o exporter acrescenta /v1/logs
@@ -33,8 +44,8 @@ service:
     traces: # mesmo receiver e mesmos processors; só o destino muda por sinal
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlphttp/tempo]
-    metrics: # métricas das apps (OTel SDK) -> Mimir
-      receivers: [otlp]
+      exporters: [otlphttp/tempo, spanmetrics]
+    metrics: # métricas das apps (OTel SDK) + span metrics -> Mimir
+      receivers: [otlp, spanmetrics]
       processors: [memory_limiter, batch]
       exporters: [otlphttp/mimir]
