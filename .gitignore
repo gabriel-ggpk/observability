@@ -1,2 +1,2 @@
 .terragrunt-cache/
-*/config.hcl
+.terraform.lock.hcl
