@@ -41,3 +41,17 @@ datasources:
         datasourceUid: loki
       nodeGraph:
         enabled: true
+
+  - name: Mimir
+    uid: mimir
+    type: prometheus # o Mimir fala a API do Prometheus
+    access: proxy
+    url: http://mimir:8080/prometheus # prefixo da API de consulta do Mimir
+    editable: false
+    jsonData:
+      prometheusType: Mimir
+      httpMethod: POST
+      # Métrica -> trace: exemplars com trace_id viram link para o Tempo
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo

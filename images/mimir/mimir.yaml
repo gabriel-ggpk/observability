@@ -1,0 +1,76 @@
+target: all
+multitenancy_enabled: false # fase atual: um tenant só (sem X-Scope-OrgID)
+
+server:
+  http_listen_port: 8080 # escrita OTLP, consulta PromQL e /ready
+  grpc_listen_port: 9095
+  log_level: info
+
+# Um bucket só, separado por prefixo para cada tipo de dado
+common:
+  storage:
+    backend: s3
+    s3:
+      endpoint: s3.${AWS_REGION}.amazonaws.com
+      region: ${AWS_REGION}
+      bucket_name: ${MIMIR_S3_BUCKET} # sem chaves: credenciais vêm da task role
+
+blocks_storage:
+  storage_prefix: blocks
+  tsdb:
+    dir: /data/tsdb # disco efêmero da task (WAL + bloco em construção)
+  bucket_store:
+    sync_dir: /data/tsdb-sync
+
+ruler_storage:
+  storage_prefix: ruler
+
+alertmanager_storage:
+  storage_prefix: alertmanager
+
+ingester:
+  ring:
+    kvstore:
+      store: inmemory
+    replication_factor: 1
+    instance_addr: 127.0.0.1
+
+distributor:
+  ring:
+    kvstore:
+      store: inmemory
+    instance_addr: 127.0.0.1
+
+store_gateway:
+  sharding_ring:
+    kvstore:
+      store: inmemory
+    replication_factor: 1
+    instance_addr: 127.0.0.1
+
+compactor:
+  data_dir: /data/compactor
+  sharding_ring:
+    kvstore:
+      store: inmemory
+    instance_addr: 127.0.0.1
+
+ruler:
+  ring:
+    kvstore:
+      store: inmemory
+    instance_addr: 127.0.0.1
+
+limits:
+  compactor_blocks_retention_period: 744h # 31 dias, igual ao Loki
+  # O ADOT manda histogramas exponenciais; o Mimir os guarda como native histograms
+  native_histograms_ingestion_enabled: true
+  # Atributo de recurso OTLP que vira label (o resto fica em target_info)
+  promote_otel_resource_attributes: "deployment.environment.name"
+  # Exemplars (trace_id em pontos de latência) vêm desligados por padrão (0)
+  max_global_exemplars_per_user: 100000
+  # Rede de segurança da plataforma: teto de séries ativas (é o default; aqui fica explícito)
+  max_global_series_per_user: 150000
+
+usage_stats:
+  enabled: false # não enviar estatísticas de uso para a Grafana Labs

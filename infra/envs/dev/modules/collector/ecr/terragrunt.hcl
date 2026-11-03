@@ -3,7 +3,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/aca-so/terraform-modules.git//ecr/repository?ref=main"
+  source = "${get_parent_terragrunt_dir("root")}/modules/ecr"
 }
 
 inputs = {

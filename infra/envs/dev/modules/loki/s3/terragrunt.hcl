@@ -11,7 +11,7 @@ include "root" {
 }
 
 terraform {
-  source  = "git::https://github.com/aca-so/terraform-modules.git//s3/basic?ref=main"
+  source = "${get_parent_terragrunt_dir("root")}/modules/s3-bucket"
 }
 
 inputs ={

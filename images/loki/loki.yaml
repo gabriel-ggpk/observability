@@ -1,6 +1,3 @@
-# Loki monolítico (1 réplica) com chunks e índice no S3.
-# ${VAR} é expandido a partir das env vars da task (-config.expand-env=true).
-
 auth_enabled: false # single-tenant; multi-tenant (X-Scope-OrgID) fica para depois
 
 server:
@@ -19,11 +16,11 @@ common:
   storage:
     s3:
       region: ${AWS_REGION}
-      bucketnames: ${LOKI_S3_BUCKET} # credenciais vêm da task role, sem access key
+      bucketnames: ${LOKI_S3_BUCKET}
 
 schema_config:
   configs:
-    - from: 2026-10-01 # nunca altere um período já escrito; mudanças entram como novo item
+    - from: 2026-10-01
       store: tsdb
       object_store: s3
       schema: v13
