@@ -5,17 +5,13 @@
 # ---------------------------------------------------------------------------------------------------------------------
 
 locals {
-  # Automatically load account-level variables
-  account_vars = read_terragrunt_config(find_in_parent_folders("config.hcl"))
-  # Automatically load region-level variables
-  region_vars = read_terragrunt_config(find_in_parent_folders("config.hcl"))
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("config.hcl"))
+  # Tudo o que é específico da conta/ambiente vem do config.hcl do ambiente (envs/<env>/config.hcl).
+  # Units com `expose = true` no include leem os valores como include.root.locals.config.<chave>.
+  config = read_terragrunt_config(find_in_parent_folders("config.hcl")).locals
 
-  # Extract the variables we need for easy access
-  account_name = local.account_vars.locals.account_name
-  account_id   = local.account_vars.locals.aws_account_id
-  aws_region   = local.region_vars.locals.aws_region
+  account_name = local.config.account_name
+  account_id   = local.config.aws_account_id
+  aws_region   = local.config.aws_region
 }
 
 # Generate an AWS provider block
@@ -36,11 +32,11 @@ EOF
 remote_state {
   backend = "s3"
   config = {
-    encrypt        = true
-    bucket         = "${get_env("TG_BUCKET_PREFIX", "")}terragrunt-tf-state-${local.account_name}"
-    key            = "${path_relative_to_include()}/tf.tfstate"
-    region         = local.aws_region
-    use_lockfile   = true
+    encrypt      = true
+    bucket       = "${get_env("TG_BUCKET_PREFIX", "")}terragrunt-tf-state-${local.account_name}"
+    key          = "${path_relative_to_include()}/tf.tfstate"
+    region       = local.aws_region
+    use_lockfile = true
   }
   generate = {
     path      = "backend.tf"
@@ -54,10 +50,11 @@ remote_state {
 # `terragrunt.hcl` config via the include block.
 # ---------------------------------------------------------------------------------------------------------------------
 
-# Configure root level variables that all resources can inherit. This is especially helpful with multi-account configs
-# where terraform_remote_state data sources are placed directly into the modules.
-inputs = merge(
-  local.account_vars.locals,
-  local.region_vars.locals,
-  local.environment_vars.locals,
-)
+# Inputs comuns a todos os units. Os que um módulo não declara são ignorados (ex.: o ECR não usa vpc_id).
+inputs = {
+  env            = local.config.environment
+  department     = local.config.department
+  vpc_id         = local.config.vpc_id
+  vpc_cidr_block = local.config.vpc_cidr_block
+  subnet_ids     = local.config.subnet_ids
+}

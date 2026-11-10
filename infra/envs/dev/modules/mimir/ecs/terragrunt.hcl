@@ -8,31 +8,25 @@ terraform {
 }
 
 dependency "cluster" {
-  config_path = "../../cluster"
-  mock_outputs = { cluster_id = "mock", service_connect_namespace_arn = "arn:aws:servicediscovery:us-east-1:000000000000:namespace/mock" }
+  config_path                             = "../../cluster"
+  mock_outputs                            = { cluster_id = "mock", service_connect_namespace_arn = "arn:aws:servicediscovery:us-east-1:000000000000:namespace/mock" }
   mock_outputs_allowed_terraform_commands = ["validate", "plan"]
 }
 
 dependency "ecr" {
-  config_path = "../ecr"
-  mock_outputs = { repository_url = "mock" }
+  config_path                             = "../ecr"
+  mock_outputs                            = { repository_url = "mock" }
   mock_outputs_allowed_terraform_commands = ["validate", "plan"]
 }
 
 dependency "s3" {
-  config_path = "../s3"
-  mock_outputs = { bucket_name = "mock-bucket", bucket_arn = "arn:aws:s3:::mock-bucket" }
+  config_path                             = "../s3"
+  mock_outputs                            = { bucket_name = "mock-bucket", bucket_arn = "arn:aws:s3:::mock-bucket" }
   mock_outputs_allowed_terraform_commands = ["validate", "plan"]
 }
 
 inputs = {
   service_name = "mimir"
-  env          = "dev"
-  department   = "SRE"
-
-  vpc_id         = "vpc-0a91fbffb2f8c86cb"
-  vpc_cidr_block = "10.2.0.0/16"
-  subnet_ids     = ["subnet-0f2905459d06a9914", "subnet-0a6197680683c2d96"]
 
   cluster_id       = dependency.cluster.outputs.cluster_id
   image_uri        = "${dependency.ecr.outputs.repository_url}:latest"

@@ -8,7 +8,5 @@ terraform {
 
 inputs = {
   repository_name = "otel-collector"
-  env             = "dev"
-  department      = "SRE"
   max_image_count = 5
 }

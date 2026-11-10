@@ -7,10 +7,8 @@ terraform {
 }
 
 inputs = {
-  cluster_name               = "observability"
-  env                        = "dev"
-  department                 = "SRE"
-  container_insights = "enhanced"
-  log_retention_days         = 14
+  cluster_name                     = "observability"
+  container_insights               = "enhanced"
+  log_retention_days               = 14
   create_service_connect_namespace = true
 }
